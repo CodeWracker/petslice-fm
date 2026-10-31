@@ -42,6 +42,9 @@ Regenerating it must give the same folds; `git diff manifests/` is the check.
 | MedImageInsight DaViT | `lion-ai/MedImageInsights` | `8b332dbc` | MIT, as stated by the mirror |
 | SPECTRE Large | `cclaess/SPECTRE-Large` | `e9ad7d19` | CC BY-NC-SA 4.0 |
 
+| Open PET/CT FM, SwinV2-Base | Dropbox link in `liu-xiaofeng/Foundation-Model-for-PET-CT` | sha256 `d067e473` | not stated |
+
+The Dropbox folder has no revision, so `swin_mae_best_v2.pth` is identified by its sha256 prefix.
 Revisions are pinned in `src/petslice/models/`. Third-party checkpoints are read as safetensors, so
 no pickle is executed.
 
@@ -54,6 +57,7 @@ uv run scripts/run_grid.py volumes --gpus 1 2 4          # 3D ResNet, all fracti
 uv run scripts/run_grid.py backbones --gpus 1 2 4        # E3, reads the validated input choice
 uv run scripts/run_grid.py data_efficiency --gpus 1 2 4  # E4
 uv run scripts/extract_spectre.py
+uv run scripts/extract_petct_fm.py
 uv run scripts/pretrain_segmentation.py --tracer fdg --fold 0   # repeat for each tracer and fold
 uv run scripts/train_token_heads.py
 uv run scripts/score_external.py                         # E6

@@ -17,6 +17,17 @@ def chance_hit(n_slices: int, n_lesion: int, k: int) -> float:
     return 1.0 - comb(n_slices - n_lesion, k) / comb(n_slices, k)
 
 
+def spearman_ceiling(lesion_ml: np.ndarray) -> float:
+    """Spearman reached by weights ordered exactly like the lesion volume.
+
+    Lesion-free slices tie, so sparse lesions cap the coefficient far below 1. Reporting this bound
+    keeps the observed correlation interpretable.
+    """
+    rng = np.random.default_rng(0)
+    ideal = lesion_ml + 1e-9 * rng.random(len(lesion_ml))
+    return float(spearmanr(ideal, lesion_ml).statistic)
+
+
 def study_statistics(weights: np.ndarray, lesion_ml: np.ndarray) -> dict[str, float]:
     """Attention statistics of a study, on the slices it was evaluated on."""
     has_lesion = lesion_ml > 0
@@ -27,8 +38,9 @@ def study_statistics(weights: np.ndarray, lesion_ml: np.ndarray) -> dict[str, fl
         row[f"chance@{k}"] = chance_hit(len(weights), row["n_lesion_slices"], k)
     if 0 < row["n_lesion_slices"] < len(weights) and np.ptp(weights) > 0:
         row["spearman"] = float(spearmanr(weights, lesion_ml).statistic)
+        row["spearman_ceiling"] = spearman_ceiling(lesion_ml)
     else:
-        row["spearman"] = float("nan")
+        row["spearman"] = row["spearman_ceiling"] = float("nan")
     return row
 
 
@@ -67,5 +79,6 @@ def correlation_test(studies: pd.DataFrame) -> dict[str, float]:
     return {
         "n_studies": len(values),
         "median_spearman": float(np.median(values)),
+        "median_ceiling": float(studies["spearman_ceiling"].median()),
         "wilcoxon_p": float(wilcoxon(values).pvalue),
     }

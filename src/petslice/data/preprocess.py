@@ -128,6 +128,7 @@ def process_study(paths: StudyPaths, out_dir: Path) -> dict:
     center = body_center(ct)
     ct_grid = resample(ct, spacing, center, fill=-1024.0).clamp(*CT_RANGE)
     pet_grid = resample(pet, spacing, center, fill=0.0).clamp(min=0)
+    mask_grid = resample(label, spacing, center, fill=0.0) >= 0.5
     n_slices = ct_grid.shape[0]
     mips = rotated_mips(pet_grid)
     coarse = F.interpolate(
@@ -155,6 +156,7 @@ def process_study(paths: StudyPaths, out_dir: Path) -> dict:
     np.save(out_dir / "pet.npy", pet_grid.numpy().astype(np.float16))
     np.save(out_dir / "mip.npy", mips.numpy().astype(np.float16))
     np.save(out_dir / "coarse.npy", coarse.numpy().astype(np.float16))
+    np.save(out_dir / "mask.npy", mask_grid.numpy().astype(np.uint8))
     np.save(out_dir / "lesion_ml.npy", lesions.astype(np.float32))
     (out_dir / "meta.json").write_text(json.dumps(meta))
     return meta

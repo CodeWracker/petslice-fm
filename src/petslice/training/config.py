@@ -31,7 +31,7 @@ class RunConfig:
     wd_head: float = 1e-4
     focal_gamma: float = 2.0
     focal_alpha: float = 0.25
-    num_workers: int = 6
+    num_workers: int = 4
 
     @property
     def method(self) -> str:

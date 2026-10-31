@@ -1,6 +1,7 @@
 """Train one fold, select the best epoch on validation AUROC and score the test fold."""
 
 import json
+import os
 import random
 import time
 from pathlib import Path
@@ -140,6 +141,21 @@ def save_attention(path: Path, attention: dict) -> None:
     np.savez_compressed(path, **arrays)
 
 
+def save_checkpoint(path: Path, state: dict) -> None:
+    """Write atomically, so a kill during the save leaves the previous checkpoint intact."""
+    temporary = path.with_suffix(".tmp")
+    torch.save(state, temporary)
+    os.replace(temporary, path)
+
+
+def restore_history(path: Path, completed_epochs: int) -> list[str]:
+    """Keep the records of checkpointed epochs; later ones are trained again."""
+    if not path.exists():
+        return []
+    records = path.read_text().splitlines()
+    return [line + "\n" for line in records if json.loads(line)["epoch"] < completed_epochs]
+
+
 def train_run(config: RunConfig, device: str = "cuda") -> dict:
     run_dir = config.run_dir
     if (run_dir / "metrics.json").exists():
@@ -172,10 +188,30 @@ def train_run(config: RunConfig, device: str = "cuda") -> dict:
         optimizer, T_max=config.max_epochs * len(loader)
     )
 
+    generator = loader.generator
     best_auroc, best_epoch, best_state = -1.0, -1, None
-    started = time.time()
+    elapsed, first_epoch = 0.0, 0
+    checkpoint_path = run_dir / "last.pt"
+    if checkpoint_path.exists():
+        checkpoint = torch.load(checkpoint_path, map_location=device)
+        model.load_state_dict(checkpoint["model"], strict=False)
+        optimizer.load_state_dict(checkpoint["optimizer"])
+        scheduler.load_state_dict(checkpoint["scheduler"])
+        generator.set_state(checkpoint["generator"].cpu())
+        torch.set_rng_state(checkpoint["rng"].cpu())
+        best_auroc, best_epoch = checkpoint["best_auroc"], checkpoint["best_epoch"]
+        best_state = torch.load(run_dir / "best.pt", map_location=device)
+        elapsed, first_epoch = checkpoint["elapsed"], checkpoint["epoch"] + 1
+        print(f"resuming from epoch {first_epoch}", flush=True)
+    previous = restore_history(run_dir / "history.jsonl", first_epoch)
+    started = time.time() - elapsed
     history = (run_dir / "history.jsonl").open("w")
-    for epoch in range(config.max_epochs):
+    history.writelines(previous)
+    history.flush()
+    epochs_run = first_epoch
+    for epoch in range(first_epoch, config.max_epochs):
+        if best_epoch >= 0 and epoch - 1 - best_epoch >= config.patience:
+            break
         model.train()
         losses = []
         for batch in loader:
@@ -205,9 +241,22 @@ def train_run(config: RunConfig, device: str = "cuda") -> dict:
         if validation_auroc > best_auroc:
             best_auroc, best_epoch = validation_auroc, epoch
             best_state = model.trainable_state()
-            torch.save(best_state, run_dir / "best.pt")
-        elif epoch - best_epoch >= config.patience:
-            break
+            save_checkpoint(run_dir / "best.pt", best_state)
+        epochs_run = epoch + 1
+        save_checkpoint(
+            checkpoint_path,
+            {
+                "model": model.trainable_state(),
+                "optimizer": optimizer.state_dict(),
+                "scheduler": scheduler.state_dict(),
+                "generator": generator.get_state(),
+                "rng": torch.get_rng_state(),
+                "epoch": epoch,
+                "best_auroc": best_auroc,
+                "best_epoch": best_epoch,
+                "elapsed": time.time() - started,
+            },
+        )
     history.close()
     train_seconds = time.time() - started
 
@@ -229,7 +278,7 @@ def train_run(config: RunConfig, device: str = "cuda") -> dict:
         ),
         "val_auroc": best_auroc,
         "best_epoch": best_epoch,
-        "epochs_run": epoch + 1,
+        "epochs_run": epochs_run,
         "threshold": threshold,
         "n_train": len(train),
         "n_val": len(validation),
@@ -239,4 +288,5 @@ def train_run(config: RunConfig, device: str = "cuda") -> dict:
         "peak_gpu_bytes": torch.cuda.max_memory_allocated(),
     }
     (run_dir / "metrics.json").write_text(json.dumps(metrics, indent=2))
+    checkpoint_path.unlink(missing_ok=True)
     return metrics

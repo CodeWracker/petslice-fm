@@ -23,6 +23,7 @@ dependencies = [
     "tqdm>=4.66",
     "matplotlib>=3.9",
     "einops>=0.8.2",
+    "spectre-fm>=0.2.1",
 ]
 
 [dependency-groups]

@@ -300,6 +300,15 @@ wheels = [
 ]
 
 [[package]]
+name = "loralib"
+version = "0.1.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/3d/da/117193e94c47dc5288b17443d53d8c4b373c59e37d2ffda7e275e0cea717/loralib-0.1.2.tar.gz", hash = "sha256:22ccff494a6254b973ddaee9f9aad4657941cab4221c75c5a04e0cac4fbd4567", size = 14552, upload-time = "2023-08-27T16:48:19.333Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f1/e7/a4362bf791bca17d2d91e7c69483185ab03d5aa05dd10391eff2e179a685/loralib-0.1.2-py3-none-any.whl", hash = "sha256:e341c9a507b180f3b8e70914efef9f6b19d1aa3996dec546b180cfbd027059e9", size = 10390, upload-time = "2023-08-27T16:48:17.723Z" },
+]
+
+[[package]]
 name = "markdown-it-py"
 version = "4.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -624,6 +633,7 @@ dependencies = [
     { name = "safetensors" },
     { name = "scikit-learn" },
     { name = "scipy" },
+    { name = "spectre-fm" },
     { name = "timm" },
     { name = "torch" },
     { name = "torchvision" },
@@ -652,6 +662,7 @@ requires-dist = [
     { name = "safetensors" },
     { name = "scikit-learn", specifier = ">=1.5" },
     { name = "scipy", specifier = ">=1.14" },
+    { name = "spectre-fm", specifier = ">=0.2.1" },
     { name = "timm", specifier = ">=1.0.20" },
     { name = "torch", specifier = "==2.7.1", index = "https://download.pytorch.org/whl/cu126" },
     { name = "torchvision", specifier = "==0.22.1", index = "https://download.pytorch.org/whl/cu126" },
@@ -929,6 +940,23 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/94/e7/b2c673351809dca68a0e064b6af791aa332cf192da575fd474ed7d6f16a2/six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81", size = 34031, upload-time = "2024-12-04T17:35:28.174Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274", size = 11050, upload-time = "2024-12-04T17:35:26.475Z" },
+]
+
+[[package]]
+name = "spectre-fm"
+version = "0.2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "huggingface-hub" },
+    { name = "loralib" },
+    { name = "numpy" },
+    { name = "timm" },
+    { name = "torch" },
+    { name = "transformers" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/77/d2/768e51bb53ba4059e9aa16568743c9740ea4cd4881bf8c8a0ef6cacd3935/spectre_fm-0.2.1.tar.gz", hash = "sha256:31ba670ffcce95f53e0641d893f8f9288c3489e29f2ea970a6e67ab40208ef0c", size = 1305891, upload-time = "2026-07-17T11:39:00.904Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/84/10/65a5d726390942d832d79a54f27a627773c61052db647a893fc5672c494b/spectre_fm-0.2.1-py3-none-any.whl", hash = "sha256:bb4654438e95358880a97c2276781e5493e805fcf9838527546bbf7b12043b98", size = 151059, upload-time = "2026-07-17T11:38:59.217Z" },
 ]
 
 [[package]]

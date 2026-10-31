@@ -42,7 +42,7 @@ def memory_available_gb() -> float:
     return float("nan")
 
 
-def arc_available_gb() -> float:
+def arc_size_gb() -> float:
     with open("/proc/spl/kstat/zfs/arcstats") as source:
         for line in source:
             if line.startswith("size "):
@@ -93,7 +93,7 @@ def main() -> None:
                 "overlay_growth_gb": round(overlay - baseline, 2),
                 "shm_gb": round(shutil.disk_usage("/dev/shm").used / 1e9, 1),
                 "host_available_gb": round(memory_available_gb(), 1),
-                "arc_gb": round(arc_available_gb(), 1),
+                "arc_gb": round(arc_size_gb(), 1),
                 "load": round(os.getloadavg()[0]),
                 "gpu_mib": gpu_memory_mib(),
             }

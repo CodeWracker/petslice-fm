@@ -2,7 +2,8 @@
 
 Source: lion-ai/MedImageInsights, MedImageInsight/ImageEncoder/davit_v1.py, revision
 8b332dbcc542ca6b84b955269e547533960ab197, distributed under the MIT license. Apart from formatting, the
-only change is the removal of the unused `mup` readout, weight-init and registry code.
+only changes are the removal of unused `mup`, weight-init and registry code and non-reentrant
+checkpointing, because reentrant checkpointing left the last stage without gradients.
 """
 
 import logging
@@ -570,7 +571,7 @@ class DaViT(nn.Module):
         for conv, block in zip(self.convs, self.blocks, strict=False):
             x, input_size = conv(x, input_size)
             if self.enable_checkpoint:
-                x, input_size = checkpoint.checkpoint(block, x, input_size)
+                x, input_size = checkpoint.checkpoint(block, x, input_size, use_reentrant=False)
             else:
                 x, input_size = block(x, input_size)
 

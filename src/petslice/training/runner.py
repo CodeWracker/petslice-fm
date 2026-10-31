@@ -182,6 +182,8 @@ def train_run(config: RunConfig, device: str = "cuda") -> dict:
             losses.append(loss.item())
         result = predict(model, validation, config, device)
         validation_auroc = auroc(result["label"], squeeze(result["scores"]))
+        if not np.isfinite(validation_auroc):
+            raise ValueError("validation AUROC is undefined; check the split and the model output")
         record = {
             "epoch": epoch,
             "loss": float(np.mean(losses)),

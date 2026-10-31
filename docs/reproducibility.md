@@ -52,10 +52,10 @@ no pickle is executed.
 
 ```bash
 uv run scripts/run_references.py
-uv run scripts/run_grid.py inputs --gpus 1 2 4           # E2 and the E1 recipe
-uv run scripts/run_grid.py volumes --gpus 1 2 4          # 3D ResNet, all fractions
-uv run scripts/run_grid.py backbones --gpus 1 2 4        # E3, reads the validated input choice
-uv run scripts/run_grid.py data_efficiency --gpus 1 2 4  # E4
+uv run scripts/run_grid.py inputs --gpus 0 1 2 3 4 5     # E2 and the E1 recipe
+uv run scripts/run_grid.py volumes --gpus 0 1 2 3 4 5    # 3D ResNet, all fractions
+uv run scripts/run_grid.py backbones --gpus 0 1 2 3 4 5  # E3, reads the validated input choice
+uv run scripts/run_grid.py data_efficiency --gpus 0 1 2 3 4 5  # E4
 uv run scripts/extract_spectre.py
 uv run scripts/extract_petct_fm.py
 uv run scripts/pretrain_segmentation.py --tracer fdg --fold 0   # repeat for each tracer and fold
@@ -64,8 +64,10 @@ uv run scripts/score_external.py                         # E6
 uv run scripts/aggregate.py                              # tables under results/
 ```
 
-`run_grid.py` skips finished runs, so it can be restarted after an interruption. Each fold uses the
-seed `2027 + fold`. Runs are not bit-exact across GPU models, because `bfloat16` autocast and
+`run_grid.py` skips finished runs and each run resumes from its last epoch, so the grid can simply be
+restarted after an interruption. Runs start every two minutes with capped thread pools, and
+`scripts/resource_guard.py` pauses new starts near a resource limit while logging to
+`runs/logs/resources.jsonl`. Start it first on shared hosts. Each fold uses the seed `2027 + fold`. Runs are not bit-exact across GPU models, because `bfloat16` autocast and
 non-deterministic convolutions are left enabled for speed; the patient-level intervals are the
 meaningful unit of comparison.
 

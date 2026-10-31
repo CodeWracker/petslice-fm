@@ -53,3 +53,24 @@ def intensity(images: torch.Tensor) -> torch.Tensor:
 
 def augment(images: torch.Tensor) -> torch.Tensor:
     return intensity(spatial(images))
+
+
+def augment_volumes(volumes: torch.Tensor) -> torch.Tensor:
+    """Random in-plane flip, small rotation, zoom and intensity changes on (B, C, Z, Y, X)."""
+    batch = volumes.shape[0]
+    device = volumes.device
+    angle = torch.empty(batch, device=device).uniform_(-math.pi / 12, math.pi / 12)
+    zoom = torch.empty(batch, device=device).uniform_(0.85, 1.15)
+    flip = torch.where(torch.rand(batch, device=device) < 0.5, -1.0, 1.0)
+    theta = torch.zeros(batch, 3, 4, device=device)
+    theta[:, 0, 0] = torch.cos(angle) * zoom * flip
+    theta[:, 0, 1] = -torch.sin(angle) * zoom
+    theta[:, 1, 0] = torch.sin(angle) * zoom * flip
+    theta[:, 1, 1] = torch.cos(angle) * zoom
+    theta[:, 2, 2] = zoom
+    theta[:, :, 3] = torch.empty(batch, 3, device=device).uniform_(-0.1, 0.1)
+    grid = F.affine_grid(theta, volumes.shape, align_corners=False)
+    warped = F.grid_sample(
+        volumes, grid, mode="bilinear", padding_mode="zeros", align_corners=False
+    )
+    return intensity(warped)

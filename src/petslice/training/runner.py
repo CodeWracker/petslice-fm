@@ -10,11 +10,12 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 
-from petslice.data.augment import augment
-from petslice.data.dataset import PetCtDataset
+from petslice.data.augment import augment, augment_volumes
+from petslice.data.dataset import CoarseVolumeDataset, PetCtDataset
 from petslice.evaluation.metrics import auroc, classification_metrics, youden_threshold
 from petslice.models.classifier import SliceClassifier
 from petslice.models.encoders import build_encoder
+from petslice.models.volume3d import Volume3DClassifier
 from petslice.paths import MANIFEST_PATH, PROCESSED_DIR
 from petslice.tasks import TASKS, Task, split_cohort, subsample_train
 from petslice.training.config import RunConfig
@@ -34,7 +35,13 @@ def seed_worker(worker_id: int) -> None:
     random.seed(seed)
 
 
-def build_model(config: RunConfig, task: Task, pretrained: bool = True) -> SliceClassifier:
+def is_volumetric(config: RunConfig) -> bool:
+    return config.encoder == "resnet3d"
+
+
+def build_model(config: RunConfig, task: Task, pretrained: bool = True):
+    if is_volumetric(config):
+        return Volume3DClassifier(task.n_outputs)
     size = config.mip_size if config.input_mode == "mip" else config.image_size
     encoder = build_encoder(config.encoder, size, pretrained)
     return SliceClassifier(
@@ -47,13 +54,29 @@ def build_model(config: RunConfig, task: Task, pretrained: bool = True) -> Slice
     )
 
 
-def build_optimizer(model: SliceClassifier, config: RunConfig) -> torch.optim.Optimizer:
-    lora = [p for n, p in model.encoder.named_parameters() if p.requires_grad]
+def build_optimizer(model, config: RunConfig) -> torch.optim.Optimizer:
+    if isinstance(model, Volume3DClassifier):
+        return torch.optim.AdamW(model.parameters(), lr=config.lr_head, weight_decay=config.wd_head)
+    lora = [p for p in model.encoder.parameters() if p.requires_grad]
     head = [*model.pool.parameters(), *model.head.parameters()]
     groups = [{"params": head, "lr": config.lr_head, "weight_decay": config.wd_head}]
     if lora:
         groups.append({"params": lora, "lr": config.lr_lora, "weight_decay": config.wd_lora})
     return torch.optim.AdamW(groups)
+
+
+def build_dataset(frame: pd.DataFrame, config: RunConfig, training: bool):
+    if is_volumetric(config):
+        return CoarseVolumeDataset(frame, PROCESSED_DIR)
+    return PetCtDataset(
+        frame,
+        PROCESSED_DIR,
+        config.input_mode,
+        training=training,
+        n_slices=config.n_slices,
+        eval_stride=config.eval_stride,
+        mip_size=config.mip_size,
+    )
 
 
 def to_scores(logits: torch.Tensor) -> torch.Tensor:
@@ -63,15 +86,7 @@ def to_scores(logits: torch.Tensor) -> torch.Tensor:
 
 
 def evaluation_loader(frame, config: RunConfig) -> DataLoader:
-    dataset = PetCtDataset(
-        frame,
-        PROCESSED_DIR,
-        config.input_mode,
-        training=False,
-        n_slices=config.n_slices,
-        eval_stride=config.eval_stride,
-        mip_size=config.mip_size,
-    )
+    dataset = build_dataset(frame, config, training=False)
     return DataLoader(dataset, batch_size=1, num_workers=config.num_workers, pin_memory=True)
 
 
@@ -140,14 +155,8 @@ def train_run(config: RunConfig, device: str = "cuda") -> dict:
 
     model = build_model(config, task).to(device)
     optimizer = build_optimizer(model, config)
-    dataset = PetCtDataset(
-        train,
-        PROCESSED_DIR,
-        config.input_mode,
-        training=True,
-        n_slices=config.n_slices,
-        mip_size=config.mip_size,
-    )
+    dataset = build_dataset(train, config, training=True)
+    augmentation = augment_volumes if is_volumetric(config) else augment
     loader = DataLoader(
         dataset,
         batch_size=config.batch_size,
@@ -170,7 +179,7 @@ def train_run(config: RunConfig, device: str = "cuda") -> dict:
         model.train()
         losses = []
         for batch in loader:
-            images = augment(batch["images"].to(device, non_blocking=True))
+            images = augmentation(batch["images"].to(device, non_blocking=True))
             labels = batch["label"].to(device, non_blocking=True)
             with torch.autocast("cuda", dtype=torch.bfloat16):
                 logits, _ = model(images)

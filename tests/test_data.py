@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import torch
 
-from petslice.data.augment import augment, spatial
+from petslice.data.augment import augment, augment_volumes, spatial
 from petslice.data.dataset import render_mips, render_slices, sample_positions
 from petslice.data.manifest import assign_folds
 from petslice.data.preprocess import lesion_ml_per_slice, rotated_mips
@@ -107,3 +107,9 @@ def test_augmentation_preserves_shape_and_range():
     torch.manual_seed(0)
     output = augment(torch.rand(2, 4, 3, 32, 32))
     assert output.shape == (2, 4, 3, 32, 32) and output.min() >= 0 and output.max() <= 1
+
+
+def test_volume_augmentation_preserves_shape_and_range():
+    torch.manual_seed(0)
+    output = augment_volumes(torch.rand(2, 2, 24, 16, 16))
+    assert output.shape == (2, 2, 24, 16, 16) and output.min() >= 0 and output.max() <= 1

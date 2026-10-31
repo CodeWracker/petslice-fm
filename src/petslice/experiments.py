@@ -67,8 +67,30 @@ def data_efficiency_runs() -> list[RunConfig]:
     ]
 
 
+VOLUME_OPTIONS = {
+    "encoder": "resnet3d",
+    "input_mode": "volume",
+    "adapter": "none",
+    "batch_size": 8,
+    "max_epochs": 100,
+    "patience": 20,
+    "lr_head": 3e-4,
+}
+
+
+def volume_runs() -> list[RunConfig]:
+    """E1 reference trained from scratch, at every training fraction for the E4 comparison."""
+    return [
+        run
+        for task in TASK_NAMES
+        for fraction in (*FRACTIONS, 1.0)
+        for run in runs_for(task, train_fraction=fraction, **VOLUME_OPTIONS)
+    ]
+
+
 STAGES = {
     "inputs": input_runs,
+    "volumes": volume_runs,
     "backbones": backbone_runs,
     "data_efficiency": data_efficiency_runs,
 }

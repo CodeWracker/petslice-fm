@@ -28,6 +28,9 @@ def metadata_features(frame: pd.DataFrame) -> pd.DataFrame:
             "male": (frame["sex"] == "M").astype(float),
             "contrast": (frame["ct_contrast"] == "yes").astype(float),
             "partial_body": frame["partial_body"].astype(float),
+            "biograph_mct": (frame["scanner"] == "Biograph20_mCT").astype(float),
+            "biograph_64": (frame["scanner"] == "Biograph64").astype(float),
+            "gallium": (frame["radionuclide"] == "68Ga").astype(float),
         }
     )
 

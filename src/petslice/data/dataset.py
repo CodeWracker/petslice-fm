@@ -120,3 +120,25 @@ class PetCtDataset(Dataset):
             "study_id": row["study_id"],
             "positions": torch.from_numpy(positions.astype(np.int64)),
         }
+
+
+class CoarseVolumeDataset(Dataset):
+    """Whole studies at reduced resolution for 3D models: [CT soft tissue, PET SUV]."""
+
+    def __init__(self, frame: pd.DataFrame, root: Path):
+        self.frame = frame.reset_index(drop=True)
+        self.root = Path(root)
+
+    def __len__(self) -> int:
+        return len(self.frame)
+
+    def __getitem__(self, index: int) -> dict:
+        row = self.frame.iloc[index]
+        ct, pet = np.load(self.root / study_key(row["study_id"]) / "coarse.npy")
+        volume = np.stack((window(ct, SOFT_WINDOW), scale_suv(pet)))
+        return {
+            "images": torch.from_numpy(volume),
+            "label": int(row["label"]),
+            "study_id": row["study_id"],
+            "positions": torch.zeros(1, dtype=torch.int64),
+        }

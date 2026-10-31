@@ -22,6 +22,7 @@ dependencies = [
     "pyyaml>=6",
     "tqdm>=4.66",
     "matplotlib>=3.9",
+    "einops>=0.8.2",
 ]
 
 [dependency-groups]
@@ -48,6 +49,7 @@ torchvision = { index = "pytorch-cu126" }
 
 [tool.ruff]
 line-length = 100
+extend-exclude = ["src/petslice/models/davit.py"]
 target-version = "py312"
 
 [tool.ruff.lint]

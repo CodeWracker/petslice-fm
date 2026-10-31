@@ -6,7 +6,19 @@ from collections.abc import Callable
 import torch.nn as nn
 
 
-class LoRALinear(nn.Module):
+class _Wrapped(nn.Module):
+    """Expose the wrapped layer's attributes, which host models may read directly."""
+
+    @property
+    def weight(self):
+        return self.base.weight
+
+    @property
+    def bias(self):
+        return self.base.bias
+
+
+class LoRALinear(_Wrapped):
     def __init__(self, base: nn.Linear, rank: int, alpha: float):
         super().__init__()
         self.base = base
@@ -20,7 +32,7 @@ class LoRALinear(nn.Module):
         return self.base(x) + self.lora_b(self.lora_a(x)) * self.scale
 
 
-class LoRAConv2d(nn.Module):
+class LoRAConv2d(_Wrapped):
     def __init__(self, base: nn.Conv2d, rank: int, alpha: float):
         super().__init__()
         self.base = base

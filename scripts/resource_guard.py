@@ -27,6 +27,13 @@ def read_number(name: str) -> int:
         return int(source.read().split()[0])
 
 
+def committed_memory_gb() -> float:
+    """Anonymous and shared memory; page cache is excluded because the kernel reclaims it."""
+    with open(f"{CGROUP}/memory.stat") as source:
+        stat = dict(line.split() for line in source)
+    return (int(stat["anon"]) + int(stat["shmem"])) / 1e9
+
+
 def memory_available_gb() -> float:
     with open("/proc/meminfo") as source:
         for line in source:
@@ -80,7 +87,8 @@ def main() -> None:
                 overlay, last_overlay = overlay_gb(), time.time()
             sample = {
                 "time": round(time.time()),
-                "container_gb": round(read_number("memory.current") / 1e9, 1),
+                "container_gb": round(committed_memory_gb(), 1),
+                "with_cache_gb": round(read_number("memory.current") / 1e9, 1),
                 "threads": read_number("pids.current"),
                 "overlay_growth_gb": round(overlay - baseline, 2),
                 "shm_gb": round(shutil.disk_usage("/dev/shm").used / 1e9, 1),

@@ -29,6 +29,17 @@ THREAD_LIMITS = {
 }
 
 
+def free_memory_gb() -> dict[int, float]:
+    output = subprocess.run(
+        ["nvidia-smi", "--query-gpu=index,memory.free", "--format=csv,noheader,nounits"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    rows = [line.split(", ") for line in output.strip().splitlines()]
+    return {int(index): float(free) / 1024 for index, free in rows}
+
+
 def command_for(run: RunConfig) -> list[str]:
     arguments = [sys.executable, str(REPO_ROOT / "scripts" / "train.py")]
     for field in dataclasses.fields(run):
@@ -42,6 +53,9 @@ def main() -> None:
     parser.add_argument("--gpus", type=int, nargs="+", required=True)
     parser.add_argument("--per-gpu", type=int, default=2)
     parser.add_argument("--stagger", type=float, default=120, help="Seconds between run starts.")
+    parser.add_argument(
+        "--min-free-gb", type=float, default=20, help="GPUs are shared with others."
+    )
     args = parser.parse_args()
 
     pending = [run for run in STAGES[args.stage]() if not (run.run_dir / "metrics.json").exists()]
@@ -64,10 +78,12 @@ def main() -> None:
                     failed.append(run)
                 print(f"[{finished}] {run.task} {run.method} fold{run.fold}: {status}", flush=True)
         load = {gpu: sum(cost for _, g, _, cost in active if g == gpu) for gpu in args.gpus}
-        gpu = min(args.gpus, key=load.get)
         if pending and not PAUSE.exists() and time.time() - last_start >= args.stagger:
             cost = args.per_gpu if pending[0].encoder in HEAVY_ENCODERS else 1
-            if load[gpu] + cost <= args.per_gpu:
+            free = free_memory_gb()
+            usable = [g for g in args.gpus if free[g] >= args.min_free_gb * cost]
+            gpu = min(usable, key=load.get, default=None)
+            if gpu is not None and load[gpu] + cost <= args.per_gpu:
                 run = pending.pop(0)
                 name = f"{run.task}__{run.method}__fold{run.fold}.log"
                 environment = {**os.environ, **THREAD_LIMITS, "CUDA_VISIBLE_DEVICES": str(gpu)}

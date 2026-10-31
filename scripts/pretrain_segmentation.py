@@ -25,7 +25,7 @@ from petslice.models.segmentation import (
 )
 from petslice.paths import MANIFEST_PATH, PROCESSED_DIR, RUNS_ROOT
 from petslice.tasks import TASKS, split_cohort
-from petslice.training.runner import seed_everything, seed_worker
+from petslice.training.runner import save_checkpoint, seed_everything, seed_worker
 from petslice.training.tokens import TOKEN_ROOT
 
 EPOCHS = 100
@@ -90,22 +90,32 @@ def main() -> None:
 
     model = build_unet().cuda()
     if not checkpoint.exists():
+        total = EPOCHS * ITERATIONS
+        optimizer = torch.optim.SGD(
+            model.parameters(), lr=0.01, momentum=0.99, nesterov=True, weight_decay=3e-5
+        )
+        scheduler = torch.optim.lr_scheduler.LambdaLR(
+            optimizer, lambda step: (1 - step / total) ** 0.9
+        )
+        progress = output / "last.pt"
+        first_step, elapsed = 0, 0.0
+        if progress.exists():
+            state = torch.load(progress)
+            model.load_state_dict(state["model"])
+            optimizer.load_state_dict(state["optimizer"])
+            scheduler.load_state_dict(state["scheduler"])
+            first_step, elapsed = state["step"], state["elapsed"]
+            print(f"resuming from step {first_step}", flush=True)
+            torch.manual_seed(args.seed + args.fold + first_step)
         loader = DataLoader(
-            PatchDataset(train, EPOCHS * ITERATIONS * BATCH_SIZE),
+            PatchDataset(train, (total - first_step) * BATCH_SIZE),
             batch_size=BATCH_SIZE,
             num_workers=6,
             pin_memory=True,
             worker_init_fn=seed_worker,
         )
-        optimizer = torch.optim.SGD(
-            model.parameters(), lr=0.01, momentum=0.99, nesterov=True, weight_decay=3e-5
-        )
-        total = EPOCHS * ITERATIONS
-        scheduler = torch.optim.lr_scheduler.LambdaLR(
-            optimizer, lambda step: (1 - step / total) ** 0.9
-        )
-        started, losses = time.time(), []
-        for step, (images, labels) in enumerate(loader):
+        started, losses = time.time() - elapsed, []
+        for step, (images, labels) in enumerate(loader, start=first_step):
             images = images.cuda(non_blocking=True)
             labels = labels.cuda(non_blocking=True)
             with torch.autocast("cuda", dtype=torch.bfloat16):
@@ -118,12 +128,23 @@ def main() -> None:
             losses.append(loss.item())
             if (step + 1) % ITERATIONS == 0:
                 print(step + 1, np.mean(losses[-ITERATIONS:]), time.time() - started, flush=True)
+                save_checkpoint(
+                    progress,
+                    {
+                        "model": model.state_dict(),
+                        "optimizer": optimizer.state_dict(),
+                        "scheduler": scheduler.state_dict(),
+                        "step": step + 1,
+                        "elapsed": time.time() - started,
+                    },
+                )
         torch.save(model.state_dict(), checkpoint)
         (output / "training.json").write_text(
             json.dumps(
                 {"seconds": time.time() - started, "final_loss": float(np.mean(losses[-250:]))}
             )
         )
+        progress.unlink(missing_ok=True)
     model.load_state_dict(torch.load(checkpoint))
     model.eval()
 

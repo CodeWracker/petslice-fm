@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Data and heavy artifacts live outside of git (see docs/reproducibility.md)
+/data/
+/runs/
+/checkpoints/
+*.nii
+*.nii.gz
+*.pt
+*.pth
+*.safetensors
+*.npy
+*.npz
+*.zip
+
+# Notebooks and editors
+.ipynb_checkpoints/
+.vscode/
+.idea/
+
+# Secrets
+.env

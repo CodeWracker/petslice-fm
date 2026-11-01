@@ -16,8 +16,8 @@ from petslice.experiments import STAGES
 from petslice.paths import RUNS_ROOT
 from petslice.training.config import RunConfig
 from petslice.training.running import command_for, running_elsewhere
+from petslice.training.scheduling import choose_start, cost_of
 
-HEAVY_ENCODERS = {"medimageinsight"}
 PAUSE = Path(os.environ.get("PETSLICE_PAUSE", RUNS_ROOT / "logs" / "PAUSE"))
 THREAD_LIMITS = {
     "OMP_NUM_THREADS": "2",
@@ -37,10 +37,6 @@ def free_memory_gb() -> dict[int, float]:
     ).stdout
     rows = [line.split(", ") for line in output.strip().splitlines()]
     return {int(index): float(free) / 1024 for index, free in rows}
-
-
-def cost_of(run: RunConfig, per_gpu: int) -> int:
-    return per_gpu if run.encoder in HEAVY_ENCODERS else 1
 
 
 def main() -> None:
@@ -86,12 +82,11 @@ def main() -> None:
             for gpu in running_elsewhere().values():
                 if gpu in load:
                     load[gpu] += 1
-            cost = cost_of(pending[0], args.per_gpu)
-            free = free_memory_gb()
-            usable = [g for g in args.gpus if free[g] >= args.min_free_gb * cost]
-            gpu = min(usable, key=load.get, default=None)
-            if gpu is not None and load[gpu] + cost <= args.per_gpu:
-                run = pending.pop(0)
+            choice = choose_start(pending, load, free_memory_gb(), args.per_gpu, args.min_free_gb)
+            if choice is not None:
+                index, gpu = choice
+                run = pending.pop(index)
+                cost = cost_of(run, args.per_gpu)
                 name = f"{run.task}__{run.method}__fold{run.fold}.log"
                 environment = {**os.environ, **THREAD_LIMITS, "CUDA_VISIBLE_DEVICES": str(gpu)}
                 with Path(log_dir / name).open("a") as log:

@@ -75,7 +75,7 @@ clean comparison.
 | Item | AnyMC3D | Here | Reason |
 | --- | --- | --- | --- |
 | Epochs | up to 100 | up to 50, patience 10 | compute budget across the grid |
-| Slices | not stated | 64 in training, every 2nd slice in evaluation | whole-body scans have about 300 slices |
+| Slices | fixed per task, e.g. 70 | 64 in training, every 2nd slice in evaluation | whole-body scans have about 300 slices |
 | Optimizer | not stated | AdamW with cosine decay | common default |
 | Auxiliary segmentation | optional | not used | the proposal evaluates attention without pixel supervision |
 | Augmentation | nnU-Net 3D | per-study 2D affine and intensity | applied to sampled slices on GPU |

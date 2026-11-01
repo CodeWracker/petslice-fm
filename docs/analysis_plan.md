@@ -10,7 +10,6 @@ in the amendments section at the end, with their reason.
 | `diagnosis` | autoPET FDG, 1014 studies, 900 patients | negative, melanoma, lymphoma, lung cancer |
 | `lesion_fdg` | autoPET FDG | any annotated lesion in the mask |
 | `lesion_psma` | autoPET PSMA, 597 studies, 378 patients | any annotated lesion in the mask |
-| `hpv` | HECKTOR | HPV status; pending data access |
 
 ## Splits
 
@@ -85,4 +84,4 @@ performance on PET for segmentation with a frozen encoder, not for classificatio
 
 ## Amendments
 
-None yet.
+- 2026-11-01: the HPV task on HECKTOR is dropped. Access requires a signed institutional agreement with no known approval time, and the submission deadline is close. The decision was made before any HECKTOR data was seen, and it does not depend on results of other tasks.

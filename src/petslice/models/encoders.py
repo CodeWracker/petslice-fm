@@ -1,7 +1,7 @@
 """Foundation encoders exposing one embedding per image.
 
 Weights are pinned to a repository revision. Vision transformers return their class token; DaViT
-has none, so MedImageInsight returns its globally pooled, normalized features.
+and SigLIP have none, so MedImageInsight and MedSigLIP return their pooled features.
 """
 
 import re
@@ -21,6 +21,10 @@ HF_DINOV2_LORA = re.compile(
     r"^(embeddings\.patch_embeddings\.projection"
     r"|encoder\.layer\.\d+\.attention\.(q_proj|k_proj|v_proj|o_proj))$"
 )
+HF_SIGLIP_LORA = re.compile(
+    r"^(embeddings\.patch_embedding"
+    r"|encoder\.layers\.\d+\.self_attn\.(q_proj|k_proj|v_proj|out_proj))$"
+)
 DAVIT_LORA = re.compile(
     r"^(convs\.\d+\.proj|blocks\..*\.(channel_attn|window_attn)\.fn\.(qkv|proj))$"
 )
@@ -31,6 +35,8 @@ TIMM_WEIGHTS = {
 }
 RAD_DINO_REPO = "microsoft/rad-dino"
 RAD_DINO_REVISION = "110cbc18d5133582e320b43d53bf5c44e410c936"
+MEDSIGLIP_REPO = "google/medsiglip-448"
+MEDSIGLIP_REVISION = "9cea28a1a1195f665105faa6e8544c112fd960a4"
 MEDIMAGEINSIGHT_REPO = "lion-ai/MedImageInsights"
 MEDIMAGEINSIGHT_REVISION = "8b332dbcc542ca6b84b955269e547533960ab197"
 MEDIMAGEINSIGHT_FILE = "2024.09.27/vision_model/medimageinsigt-v1.0.0.pt"
@@ -104,6 +110,36 @@ class RadDinoEncoder(FoundationEncoder):
         return self.model(pixel_values=images).last_hidden_state[:, 0]
 
 
+class MedSigLipEncoder(FoundationEncoder):
+    """SigLIP has no class token, so the embedding is its attention-pooled output."""
+
+    lora_pattern = HF_SIGLIP_LORA
+    checkpointing = False
+
+    def __init__(self):
+        from transformers import AutoImageProcessor, SiglipVisionModel
+
+        path = snapshot_download(
+            MEDSIGLIP_REPO,
+            revision=MEDSIGLIP_REVISION,
+            allow_patterns=["config.json", "preprocessor_config.json", "model.safetensors"],
+        )
+        model = SiglipVisionModel.from_pretrained(path)
+        processor = AutoImageProcessor.from_pretrained(path)
+        super().__init__(model, model.config.hidden_size, processor.image_mean, processor.image_std)
+
+    def enable_checkpointing(self) -> None:
+        self.model.gradient_checkpointing_enable({"use_reentrant": False})
+        self.checkpointing = True
+
+    def embed(self, images: torch.Tensor) -> torch.Tensor:
+        # Layers only checkpoint in training mode; the flag leaves their dropout modules in eval.
+        for layer in self.model.encoder.layers:
+            layer.training = self.checkpointing and torch.is_grad_enabled()
+        output = self.model(pixel_values=images, interpolate_pos_encoding=True)
+        return output.pooler_output
+
+
 class MedImageInsightEncoder(FoundationEncoder):
     lora_pattern = DAVIT_LORA
 
@@ -143,7 +179,7 @@ class MedImageInsightEncoder(FoundationEncoder):
         return self.model.forward_features(images)
 
 
-ENCODER_NAMES = (*TIMM_WEIGHTS, "rad_dino", "medimageinsight")
+ENCODER_NAMES = (*TIMM_WEIGHTS, "rad_dino", "medsiglip", "medimageinsight")
 
 
 def build_encoder(name: str, image_size: int, pretrained: bool = True) -> FoundationEncoder:
@@ -151,6 +187,8 @@ def build_encoder(name: str, image_size: int, pretrained: bool = True) -> Founda
         return TimmViTEncoder(name, image_size, pretrained)
     if name == "rad_dino":
         return RadDinoEncoder()
+    if name == "medsiglip":
+        return MedSigLipEncoder()
     if name == "medimageinsight":
         return MedImageInsightEncoder()
     raise KeyError(f"unknown encoder: {name}")

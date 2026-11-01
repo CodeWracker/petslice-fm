@@ -39,13 +39,14 @@ Regenerating it must give the same folds; `git diff manifests/` is the check.
 | DINOv3 ViT-L/16 | `timm/vit_large_patch16_dinov3.lvd1689m` | `30c11095` | DINOv3 License |
 | DINOv2 ViT-L/14 | `timm/vit_large_patch14_dinov2.lvd142m` | `4741e1ca` | Apache 2.0 |
 | RAD-DINO ViT-B/14 | `microsoft/rad-dino` | `110cbc18` | MIT |
+| MedSigLIP | `google/medsiglip-448`, gated | `9cea28a1` | Health AI Developer Foundations terms |
 | MedImageInsight DaViT | `lion-ai/MedImageInsights` | `8b332dbc` | MIT, as stated by the mirror |
 | SPECTRE Large | `cclaess/SPECTRE-Large` | `e9ad7d19` | CC BY-NC-SA 4.0 |
 
 | Open PET/CT FM, SwinV2-Base | Dropbox link in `liu-xiaofeng/Foundation-Model-for-PET-CT` | sha256 `d067e473` | not stated |
 
 The Dropbox folder has no revision, so `swin_mae_best_v2.pth` is identified by its sha256 prefix.
-Revisions are pinned in `src/petslice/models/`. Third-party checkpoints are read as safetensors, so
+MedSigLIP needs a Hugging Face login with its terms accepted. Revisions are pinned in `src/petslice/models/`. Third-party checkpoints are read as safetensors, so
 no pickle is executed.
 
 ## Running the study

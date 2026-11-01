@@ -12,7 +12,7 @@ FOLDS = range(5)
 TASK_NAMES = ("diagnosis", "lesion_fdg", "lesion_psma")
 COMPARED_INPUTS = ("early", "late", "mip")
 CONTROL_INPUTS = ("pet_only", "ct_only")
-OTHER_ENCODERS = ("dinov2", "rad_dino", "medimageinsight")
+OTHER_ENCODERS = ("dinov2", "rad_dino", "medsiglip", "medimageinsight")
 FRACTIONS = (0.1, 0.25, 0.5)
 
 

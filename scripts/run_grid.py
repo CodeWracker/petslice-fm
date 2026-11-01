@@ -7,19 +7,18 @@ process sizes them to the 224 host threads.
 """
 
 import argparse
-import dataclasses
 import os
 import subprocess
-import sys
 import time
 from pathlib import Path
 
 from petslice.experiments import STAGES
-from petslice.paths import REPO_ROOT, RUNS_ROOT
+from petslice.paths import RUNS_ROOT
 from petslice.training.config import RunConfig
+from petslice.training.running import command_for, running_elsewhere
 
 HEAVY_ENCODERS = {"medimageinsight"}
-PAUSE = RUNS_ROOT / "logs" / "PAUSE"
+PAUSE = Path(os.environ.get("PETSLICE_PAUSE", RUNS_ROOT / "logs" / "PAUSE"))
 THREAD_LIMITS = {
     "OMP_NUM_THREADS": "2",
     "MKL_NUM_THREADS": "2",
@@ -40,11 +39,8 @@ def free_memory_gb() -> dict[int, float]:
     return {int(index): float(free) / 1024 for index, free in rows}
 
 
-def command_for(run: RunConfig) -> list[str]:
-    arguments = [sys.executable, str(REPO_ROOT / "scripts" / "train.py")]
-    for field in dataclasses.fields(run):
-        arguments += [f"--{field.name.replace('_', '-')}", str(getattr(run, field.name))]
-    return arguments
+def cost_of(run: RunConfig, per_gpu: int) -> int:
+    return per_gpu if run.encoder in HEAVY_ENCODERS else 1
 
 
 def main() -> None:
@@ -58,8 +54,16 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    pending = [run for run in STAGES[args.stage]() if not (run.run_dir / "metrics.json").exists()]
-    print(f"{len(pending)} runs pending in stage {args.stage}", flush=True)
+    elsewhere = running_elsewhere()
+    pending = [
+        run
+        for run in STAGES[args.stage]()
+        if not (run.run_dir / "metrics.json").exists() and run.run_dir not in elsewhere
+    ]
+    print(
+        f"{len(pending)} runs pending in stage {args.stage}, {len(elsewhere)} running elsewhere",
+        flush=True,
+    )
     log_dir = RUNS_ROOT / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
 
@@ -77,9 +81,12 @@ def main() -> None:
                 if process.returncode != 0:
                     failed.append(run)
                 print(f"[{finished}] {run.task} {run.method} fold{run.fold}: {status}", flush=True)
-        load = {gpu: sum(cost for _, g, _, cost in active if g == gpu) for gpu in args.gpus}
         if pending and not PAUSE.exists() and time.time() - last_start >= args.stagger:
-            cost = args.per_gpu if pending[0].encoder in HEAVY_ENCODERS else 1
+            load = {gpu: sum(cost for _, g, _, cost in active if g == gpu) for gpu in args.gpus}
+            for gpu in running_elsewhere().values():
+                if gpu in load:
+                    load[gpu] += 1
+            cost = cost_of(pending[0], args.per_gpu)
             free = free_memory_gb()
             usable = [g for g in args.gpus if free[g] >= args.min_free_gb * cost]
             gpu = min(usable, key=load.get, default=None)

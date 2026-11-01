@@ -13,11 +13,12 @@ import os
 import shutil
 import subprocess
 import time
+from pathlib import Path
 
 from petslice.paths import RUNS_ROOT
 
 LOG = RUNS_ROOT / "logs" / "resources.jsonl"
-PAUSE = RUNS_ROOT / "logs" / "PAUSE"
+PAUSE = Path(os.environ.get("PETSLICE_PAUSE", RUNS_ROOT / "logs" / "PAUSE"))
 CGROUP = "/sys/fs/cgroup"
 OVERLAY_EVERY = 300
 

@@ -66,11 +66,15 @@ uv run scripts/aggregate.py                              # tables under results/
 ```
 
 `run_grid.py` skips finished runs and each run resumes from its last epoch, so the grid can simply be
-restarted after an interruption. Runs start every two minutes with capped thread pools, and
-`scripts/resource_guard.py` pauses new starts near a resource limit while logging to
-`runs/logs/resources.jsonl`. Start it first on shared hosts. Each fold uses the seed `2027 + fold`. Runs are not bit-exact across GPU models, because `bfloat16` autocast and
-non-deterministic convolutions are left enabled for speed; the patient-level intervals are the
-meaningful unit of comparison.
+restarted after an interruption. Runs start every two minutes with capped thread pools, only on GPUs
+with at least 20 GB free, and `scripts/resource_guard.py` pauses new starts near a resource limit
+while logging to `runs/logs/resources.jsonl`. Start it first on shared hosts. A runner can also be
+replaced while its runs are in flight: hold its pause file (`runs/logs/PAUSE` by default), start the
+new runner and guard with another path in `PETSLICE_PAUSE`, and the new runner skips the live runs it
+finds in `/proc` while counting them against the GPU slots. Each fold uses the seed `2027 + fold`.
+Runs are not bit-exact across GPU models, because `bfloat16` autocast and non-deterministic
+convolutions are left enabled for speed; the patient-level intervals are the meaningful unit of
+comparison.
 
 ## Artifacts kept in the repository
 

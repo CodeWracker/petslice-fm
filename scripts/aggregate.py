@@ -12,8 +12,14 @@ from petslice.evaluation.attention import (
     study_statistics,
     summarize,
 )
+from petslice.evaluation.decisions import (
+    attention_holds,
+    best_baseline,
+    input_verdict,
+    transfer_holds,
+)
 from petslice.evaluation.metrics import bootstrap_summary, holm, paired_auroc_difference
-from petslice.experiments import COMPARED_INPUTS, FOLDS, GROUP, selected_input
+from petslice.experiments import COMPARED_INPUTS, FOLDS, GROUP, TASK_NAMES, selected_input
 from petslice.paths import MANIFEST_PATH, PROCESSED_DIR, RESULTS_DIR, RUNS_ROOT
 
 TABLES = RESULTS_DIR / "tables"
@@ -160,16 +166,85 @@ def external_table(manifest: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def transfer_table(manifest: pd.DataFrame, methods: pd.DataFrame) -> pd.DataFrame:
+    """H1: the recipe against the 3D reference with the best validation AUROC, paired by study."""
+    rows = []
+    for task in TASK_NAMES:
+        try:
+            recipe = f"dinov3__{selected_input(task)}__lora"
+            baseline = best_baseline(methods, task)
+        except (FileNotFoundError, ValueError):
+            continue
+        frames = {m: load_method(task, m, manifest) for m in (recipe, baseline)}
+        if any(frame is None for frame in frames.values()):
+            continue
+        columns = ["study_id", "label", "patient_id", *_scores(frames[recipe])]
+        result = paired_auroc_difference(frames[recipe][columns], frames[baseline][columns])
+        rows.append(
+            {
+                "task": task,
+                "recipe": recipe,
+                "baseline": baseline,
+                **result,
+                "transfer": transfer_holds(result["low"]),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def decision_table(transfer, pairs, hits, correlations) -> pd.DataFrame:
+    """One row per hypothesis and task, in the terms of the analysis plan."""
+    rows = []
+    for row in transfer.itertuples():
+        rows.append(
+            {
+                "hypothesis": "H1 transfer",
+                "task": row.task,
+                "holds": row.transfer,
+                "detail": f"{row.recipe} - {row.baseline}: {row.difference:+.3f} "
+                f"[{row.low:+.3f}, {row.high:+.3f}]",
+            }
+        )
+    for task, task_pairs in pairs.groupby("task", sort=False):
+        verdict = input_verdict(task_pairs)
+        rows.append(
+            {
+                "hypothesis": "H2 input",
+                "task": task,
+                "holds": verdict != "no difference",
+                "detail": verdict,
+            }
+        )
+    for row in correlations.itertuples():
+        task_hits = hits[(hits["task"] == row.task) & (hits["method"] == row.method)]
+        rows.append(
+            {
+                "hypothesis": "H3 attention",
+                "task": row.task,
+                "holds": attention_holds(task_hits, correlations.loc[row.Index]),
+                "detail": f"{row.method}: hit@1 {task_hits.iloc[0]['hit']:.2f} vs chance "
+                f"{task_hits.iloc[0]['chance']:.2f}, median Spearman {row.median_spearman:+.2f}",
+            }
+        )
+    return pd.DataFrame(rows)
+
+
 def main() -> None:
     TABLES.mkdir(parents=True, exist_ok=True)
     manifest = pd.read_csv(MANIFEST_PATH)
     methods = method_table(manifest)
     methods.to_csv(TABLES / "methods.csv", index=False, float_format="%.4f")
-    input_comparisons(manifest).to_csv(TABLES / "input_pairs.csv", index=False, float_format="%.4f")
+    pairs = input_comparisons(manifest)
+    pairs.to_csv(TABLES / "input_pairs.csv", index=False, float_format="%.4f")
     hits, correlations = attention_tables(manifest)
     hits.to_csv(TABLES / "attention_hits.csv", index=False, float_format="%.4f")
     correlations.to_csv(TABLES / "attention_correlation.csv", index=False, float_format="%.4g")
     external_table(manifest).to_csv(TABLES / "external_psma.csv", index=False, float_format="%.4f")
+    transfer = transfer_table(manifest, methods)
+    transfer.to_csv(TABLES / "transfer.csv", index=False, float_format="%.4f")
+    decisions = decision_table(transfer, pairs, hits, correlations)
+    decisions.to_csv(TABLES / "decisions.csv", index=False)
+    print(decisions.to_string(index=False), end="\n\n")
     columns = [
         "task",
         "method",

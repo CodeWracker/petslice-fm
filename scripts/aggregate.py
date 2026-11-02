@@ -24,6 +24,7 @@ from petslice.paths import MANIFEST_PATH, PROCESSED_DIR, RESULTS_DIR, RUNS_ROOT
 
 TABLES = RESULTS_DIR / "tables"
 PREDICTIONS = RESULTS_DIR / "predictions"
+ATTENTION = RESULTS_DIR / "attention"
 
 
 def load_method(task: str, method: str, manifest: pd.DataFrame, split: str = "test"):
@@ -112,7 +113,7 @@ def attention_tables(manifest: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame
         if mode == "mip":
             mode = "early"
         method = f"dinov3__{mode}__lora"
-        rows = []
+        rows, profiles = [], []
         for fold in FOLDS:
             path = RUNS_ROOT / GROUP / task / method / f"fold{fold}" / "attention.npz"
             if not path.exists():
@@ -126,6 +127,16 @@ def attention_tables(manifest: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame
                 weights = stored[f"{index}_weights"]
                 lesion_ml = lesions[stored[f"{index}_positions"]]
                 if (lesion_ml > 0).any():
+                    profiles.append(
+                        pd.DataFrame(
+                            {
+                                "study_id": study,
+                                "position": stored[f"{index}_positions"],
+                                "weight": weights,
+                                "lesion_ml": lesion_ml,
+                            }
+                        )
+                    )
                     rows.append(
                         {
                             "study_id": study,
@@ -137,6 +148,9 @@ def attention_tables(manifest: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame
             studies = pd.DataFrame(rows)
             hit_rows.append(summarize(studies).assign(task=task, method=method))
             correlation_rows.append({"task": task, "method": method, **correlation_test(studies)})
+            ATTENTION.mkdir(parents=True, exist_ok=True)
+            table = pd.concat(profiles, ignore_index=True)
+            table.to_parquet(ATTENTION / f"{task}__{method}.parquet")
     return (
         pd.concat(hit_rows) if hit_rows else pd.DataFrame(),
         pd.DataFrame(correlation_rows),

@@ -1,0 +1,2 @@
+method,auroc,balanced_accuracy,macro_f1,auroc_low,auroc_high,balanced_accuracy_low,balanced_accuracy_high,macro_f1_low,macro_f1_high
+dinov3__mip__lora,0.7602,0.6500,0.6319,0.6733,0.8456,0.5729,0.7317,0.5656,0.6951

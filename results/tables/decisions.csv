@@ -1,0 +1,10 @@
+hypothesis,task,holds,detail
+H1 transfer,diagnosis,True,"dinov3__late__lora - resnet3d__volume__none: +0.062 [+0.047, +0.079]"
+H1 transfer,lesion_fdg,True,"dinov3__mip__lora - resnet3d__volume__none: +0.056 [+0.034, +0.078]"
+H1 transfer,lesion_psma,True,"dinov3__mip__lora - resnet3d__volume__none: +0.214 [+0.089, +0.338]"
+H2 input,diagnosis,True,late > early; mip > early
+H2 input,lesion_fdg,False,no difference
+H2 input,lesion_psma,False,no difference
+H3 attention,diagnosis,True,"dinov3__late__lora: hit@1 0.84 vs chance 0.17, median Spearman +0.36"
+H3 attention,lesion_fdg,True,"dinov3__early__lora: hit@1 0.84 vs chance 0.17, median Spearman +0.26"
+H3 attention,lesion_psma,False,"dinov3__early__lora: hit@1 0.27 vs chance 0.29, median Spearman -0.06"

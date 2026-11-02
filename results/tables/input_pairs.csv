@@ -1,0 +1,10 @@
+task,first,second,difference,low,high,p_value,p_holm
+diagnosis,early,late,-0.0568,-0.0695,-0.0440,0.0000,0.0000
+diagnosis,early,mip,-0.0484,-0.0680,-0.0275,0.0000,0.0000
+diagnosis,late,mip,0.0084,-0.0076,0.0247,0.3060,0.3060
+lesion_fdg,early,late,-0.0114,-0.0238,0.0025,0.0910,0.2730
+lesion_fdg,early,mip,-0.0113,-0.0317,0.0093,0.2950,0.5900
+lesion_fdg,late,mip,0.0001,-0.0190,0.0192,0.9980,0.9980
+lesion_psma,early,late,0.0479,-0.0796,0.1737,0.4870,0.9330
+lesion_psma,early,mip,-0.0358,-0.1339,0.0582,0.4050,0.9330
+lesion_psma,late,mip,-0.0837,-0.2422,0.0839,0.3110,0.9330

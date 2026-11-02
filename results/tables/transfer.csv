@@ -1,0 +1,4 @@
+task,recipe,baseline,difference,low,high,p_value,transfer
+diagnosis,dinov3__late__lora,resnet3d__volume__none,0.0624,0.0466,0.0791,0.0000,True
+lesion_fdg,dinov3__mip__lora,resnet3d__volume__none,0.0564,0.0341,0.0785,0.0000,True
+lesion_psma,dinov3__mip__lora,resnet3d__volume__none,0.2141,0.0894,0.3375,0.0000,True

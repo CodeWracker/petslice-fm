@@ -1,0 +1,4 @@
+task,method,n_studies,median_spearman,median_ceiling,wilcoxon_p
+diagnosis,dinov3__late__lora,501,0.3612,0.5638,4.12e-78
+lesion_fdg,dinov3__early__lora,501,0.2596,0.5638,7.944e-63
+lesion_psma,dinov3__early__lora,531,-0.06111,0.6374,5.229e-16

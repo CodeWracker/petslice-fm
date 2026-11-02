@@ -1,0 +1,13 @@
+k,hit,hit_low,hit_high,chance,chance_low,chance_high,task,method
+1,0.8383,0.8055,0.8700,0.1710,0.1569,0.1870,diagnosis,dinov3__late__lora
+3,0.8942,0.8677,0.9200,0.3739,0.3509,0.3983,diagnosis,dinov3__late__lora
+5,0.9102,0.8851,0.9349,0.4984,0.4730,0.5249,diagnosis,dinov3__late__lora
+10,0.9341,0.9125,0.9556,0.6726,0.6477,0.6987,diagnosis,dinov3__late__lora
+1,0.8363,0.8028,0.8700,0.1710,0.1569,0.1870,lesion_fdg,dinov3__early__lora
+3,0.8802,0.8514,0.9096,0.3739,0.3509,0.3983,lesion_fdg,dinov3__early__lora
+5,0.8882,0.8600,0.9160,0.4984,0.4730,0.5249,lesion_fdg,dinov3__early__lora
+10,0.9022,0.8752,0.9280,0.6726,0.6477,0.6987,lesion_fdg,dinov3__early__lora
+1,0.2732,0.2319,0.3189,0.2894,0.2598,0.3222,lesion_psma,dinov3__early__lora
+3,0.3866,0.3395,0.4364,0.4778,0.4403,0.5171,lesion_psma,dinov3__early__lora
+5,0.4554,0.4063,0.5038,0.5653,0.5269,0.6053,lesion_psma,dinov3__early__lora
+10,0.5539,0.5037,0.6029,0.6784,0.6420,0.7140,lesion_psma,dinov3__early__lora

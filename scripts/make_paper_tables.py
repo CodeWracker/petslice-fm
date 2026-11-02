@@ -188,7 +188,7 @@ def results_table(methods: pd.DataFrame) -> str:
                 bold=lambda task, mode=mode: chosen[task] == mode,
             )
         )
-    lines += ["\\midrule", group("Other encoders on the input chosen on validation (E3)")]
+    lines += ["\\midrule", group("Other encoders on the same input, and DINOv3 without LoRA (E3)")]
     for encoder, adapter, label in BACKBONE_ROWS[1:]:
         method = {task: f"{encoder}__{chosen[task]}__{adapter}" for task in TASKS}
         lines.append(row(label, method, hours(methods, "diagnosis", method["diagnosis"])))

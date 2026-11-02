@@ -101,4 +101,18 @@ def paired_auroc_difference(first: pd.DataFrame, second: pd.DataFrame) -> dict[s
         if subset["label"].nunique() == merged["label"].nunique():
             samples.append(difference(subset))
     low, high = np.percentile(samples, [2.5, 97.5])
-    return {"difference": point, "low": float(low), "high": float(high)}
+    draws = np.asarray(samples)
+    p_value = min(1.0, 2 * min(np.mean(draws <= 0), np.mean(draws >= 0)))
+    return {"difference": point, "low": float(low), "high": float(high), "p_value": float(p_value)}
+
+
+def holm(p_values: list[float]) -> list[float]:
+    """Holm step-down adjustment; the order of the input is kept."""
+    m = len(p_values)
+    order = np.argsort(p_values)
+    adjusted = np.empty(m)
+    running = 0.0
+    for rank, index in enumerate(order):
+        running = max(running, min(1.0, (m - rank) * p_values[index]))
+        adjusted[index] = running
+    return adjusted.tolist()

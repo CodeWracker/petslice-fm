@@ -12,7 +12,7 @@ from petslice.evaluation.attention import (
     study_statistics,
     summarize,
 )
-from petslice.evaluation.metrics import bootstrap_summary, paired_auroc_difference
+from petslice.evaluation.metrics import bootstrap_summary, holm, paired_auroc_difference
 from petslice.experiments import COMPARED_INPUTS, FOLDS, GROUP, selected_input
 from petslice.paths import MANIFEST_PATH, PROCESSED_DIR, RESULTS_DIR, RUNS_ROOT
 
@@ -74,15 +74,19 @@ def method_table(manifest: pd.DataFrame) -> pd.DataFrame:
 
 
 def input_comparisons(manifest: pd.DataFrame) -> pd.DataFrame:
+    """H2: pairwise paired differences, with p-values Holm-corrected over the pairs of a task."""
     rows = []
     for task in ("diagnosis", "lesion_fdg", "lesion_psma"):
         frames = {m: load_method(task, f"dinov3__{m}__lora", manifest) for m in COMPARED_INPUTS}
+        task_rows = []
         for first, second in (("early", "late"), ("early", "mip"), ("late", "mip")):
             if frames[first] is None or frames[second] is None:
                 continue
             columns = ["study_id", "label", "patient_id", *_scores(frames[first])]
             result = paired_auroc_difference(frames[first][columns], frames[second][columns])
-            rows.append({"task": task, "first": first, "second": second, **result})
+            task_rows.append({"task": task, "first": first, "second": second, **result})
+        for row, adjusted in zip(task_rows, holm([r["p_value"] for r in task_rows]), strict=True):
+            rows.append({**row, "p_holm": adjusted})
     return pd.DataFrame(rows)
 
 

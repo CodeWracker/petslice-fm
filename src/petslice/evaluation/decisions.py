@@ -9,6 +9,7 @@ BASELINES = (
     "nnunet__tokens__frozen",
     "spectre__tokens__frozen",
     "petct_fm__tokens__frozen",
+    "nnfoundation__tokens__frozen",
 )
 
 

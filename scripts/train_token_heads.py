@@ -7,7 +7,7 @@ from petslice.experiments import FOLDS, TASK_NAMES
 from petslice.tasks import TASKS
 from petslice.training.tokens import TOKEN_ROOT, train_tokens
 
-SHARED = ("spectre__tokens__frozen", "petct_fm__tokens__frozen")
+SHARED = ("spectre__tokens__frozen", "petct_fm__tokens__frozen", "nnfoundation__tokens__frozen")
 PER_FOLD = "nnunet__tokens__frozen"
 
 

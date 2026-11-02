@@ -15,6 +15,7 @@ MAIN_ROWS = (
     ("nnunet__tokens__frozen", "nnU-Net encoder, frozen"),
     ("spectre__tokens__frozen", "SPECTRE, frozen"),
     ("petct_fm__tokens__frozen", "PET/CT FM, frozen$^\\dagger$"),
+    ("nnfoundation__tokens__frozen", "nnFoundationViT, frozen"),
     ("reference_metadata", "Metadata only"),
     ("reference_uptake", "Uptake statistics only"),
     ("reference_scan_length", "Scan length only"),
@@ -104,7 +105,7 @@ def main_table(methods: pd.DataFrame) -> str:
             + " & ".join(cell(methods, task, method) for task in TASKS)
             + " \\\\"
         )
-        if method == "petct_fm__tokens__frozen":
+        if method == "nnfoundation__tokens__frozen":
             lines.append("\\midrule")
     lines += ["\\bottomrule", "\\end{tabular}"]
     return "\n".join(lines) + "\n"

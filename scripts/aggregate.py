@@ -13,6 +13,7 @@ from petslice.evaluation.attention import (
     summarize,
 )
 from petslice.evaluation.decisions import (
+    BASELINES,
     attention_holds,
     best_baseline,
     input_verdict,
@@ -206,6 +207,26 @@ def transfer_table(manifest: pd.DataFrame, methods: pd.DataFrame) -> pd.DataFram
     return pd.DataFrame(rows)
 
 
+def baseline_differences(manifest: pd.DataFrame) -> pd.DataFrame:
+    """Descriptive: the recipe against every 3D reference, paired by study."""
+    rows = []
+    for task in TASK_NAMES:
+        try:
+            recipe = f"dinov3__{selected_input(task)}__lora"
+        except FileNotFoundError:
+            continue
+        first = load_method(task, recipe, manifest)
+        if first is None:
+            continue
+        columns = ["study_id", "label", "patient_id", *_scores(first)]
+        for baseline in BASELINES:
+            second = load_method(task, baseline, manifest)
+            if second is not None:
+                result = paired_auroc_difference(first[columns], second[columns])
+                rows.append({"task": task, "recipe": recipe, "baseline": baseline, **result})
+    return pd.DataFrame(rows)
+
+
 def decision_table(transfer, pairs, hits, correlations) -> pd.DataFrame:
     """One row per hypothesis and task, in the terms of the analysis plan."""
     rows = []
@@ -256,6 +277,9 @@ def main() -> None:
     external_table(manifest).to_csv(TABLES / "external_psma.csv", index=False, float_format="%.4f")
     transfer = transfer_table(manifest, methods)
     transfer.to_csv(TABLES / "transfer.csv", index=False, float_format="%.4f")
+    baseline_differences(manifest).to_csv(
+        TABLES / "baselines_paired.csv", index=False, float_format="%.4f"
+    )
     decisions = decision_table(transfer, pairs, hits, correlations)
     decisions.to_csv(TABLES / "decisions.csv", index=False)
     print(decisions.to_string(index=False), end="\n\n")

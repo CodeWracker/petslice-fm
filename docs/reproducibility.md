@@ -59,6 +59,8 @@ uv run scripts/run_grid.py backbones --gpus 0 1 2 3 4 5  # E3, reads the validat
 uv run scripts/run_grid.py data_efficiency --gpus 0 1 2 3 4 5  # E4
 uv run scripts/extract_spectre.py
 uv run scripts/extract_petct_fm.py
+uv run scripts/extract_nnfoundation.py --shard 0 --shards 2   # one process per GPU
+uv run scripts/analyze_tracer_shift.py                  # E6 paired test and single fold models
 uv run scripts/pretrain_segmentation.py --tracer fdg --fold 0   # repeat for each tracer and fold
 uv run scripts/train_token_heads.py
 uv run scripts/score_external.py                         # E6

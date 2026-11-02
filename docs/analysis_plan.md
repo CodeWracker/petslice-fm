@@ -84,4 +84,5 @@ performance on PET for segmentation with a frozen encoder, not for classificatio
 
 ## Amendments
 
+- 2026-11-02: nnFoundationViT (arXiv 2609.26924, released September 2026) is added as a fifth 3D reference in E1, as a frozen encoder with the same pooling and head as the other frozen references. It was added after the results of the other methods were known, at the authors' request, because it is the contemporaneous 3D foundation model closest to this setting. Its tokens come from 192^3 crops on the shared 2.5 x 2.5 x 3 mm grid with per-volume z-scoring, as in its pretraining ("noresample"), with CT and PET as separate streams. It enters the validation-based choice of $b^\star$ like the other references. The E6 ensemble is also compared with the within-PSMA recipe by the paired bootstrap, and each FDG fold model is scored on PSMA alone, to separate the ensemble effect from the tracer transfer.
 - 2026-11-01: the HPV task on HECKTOR is dropped. Access requires a signed institutional agreement with no known approval time, and the submission deadline is close. The decision was made before any HECKTOR data was seen, and it does not depend on results of other tasks.

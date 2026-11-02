@@ -226,7 +226,7 @@ def fraction_series(methods: pd.DataFrame, task: str, base: str) -> np.ndarray:
 
 def data_efficiency_figure(methods: pd.DataFrame, path: Path) -> None:
     """The recipe keeps its margin over the 3D ResNet at every training fraction (E4)."""
-    figure, axes = plt.subplots(1, 3, figsize=(FULL_WIDTH, 1.5), gridspec_kw={"wspace": 0.22})
+    figure, axes = plt.subplots(1, 3, figsize=(FULL_WIDTH, 1.3), gridspec_kw={"wspace": 0.18})
     for axis, task in zip(axes, TASK_TITLES, strict=True):
         pairs = (
             (selected_from_table(methods, task), ACCENT, "Recipe: frozen 2D encoder + LoRA"),
@@ -241,22 +241,24 @@ def data_efficiency_figure(methods: pd.DataFrame, path: Path) -> None:
         axis.set_xticklabels(["10", "25", "50", "100"])
         axis.minorticks_off()
         axis.set_xlim(8.5, 120)
-        axis.set_ylim(0.3, 1.0)
+        axis.set_ylim(0.25, 1.0)
+        axis.set_yticks([0.4, 0.6, 0.8, 1.0])
         axis.axhline(0.5, color=MUTED, lw=0.5, ls=":")
         axis.text(118, 0.505, "chance", ha="right", va="bottom", color=MUTED, fontsize=6.5)
-        axis.set_xlabel("Training patients (%, log scale)")
         axis.set_title(TASK_TITLES[task])
         tidy(axis)
     axes[0].set_ylabel("AUROC")
-    handles, labels = axes[0].get_legend_handles_labels()
-    figure.legend(
-        handles,
-        labels,
-        loc="lower center",
-        ncol=2,
+    axes[1].set_xlabel("Training patients (%, log scale)")
+    # The legend sits in the empty band under the curves of the first panel, below the chance line,
+    # so the figure needs no extra row for it.
+    axes[0].legend(
+        loc="lower right",
+        bbox_to_anchor=(1.0, -0.02),
         frameon=False,
-        handlelength=1.6,
-        bbox_to_anchor=(0.5, -0.34),
+        handlelength=1.4,
+        borderaxespad=0.2,
+        labelspacing=0.25,
+        fontsize=6.5,
     )
     figure.savefig(path, bbox_inches="tight", pad_inches=0.01)
     plt.close(figure)

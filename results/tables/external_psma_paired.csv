@@ -1,0 +1,4 @@
+comparison,source,difference,low,high,p_value
+fdg_ensemble - psma_within,dinov3__mip__lora,0.1035,0.0229,0.1909,0.0120
+fdg_fold0_best - psma_within,dinov3__mip__lora,0.1147,0.0352,0.1992,0.0050
+fdg_fold1_worst - psma_within,dinov3__mip__lora,0.0646,-0.0236,0.1564,0.1440

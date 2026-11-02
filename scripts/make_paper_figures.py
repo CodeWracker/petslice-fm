@@ -226,7 +226,7 @@ def fraction_series(methods: pd.DataFrame, task: str, base: str) -> np.ndarray:
 
 def data_efficiency_figure(methods: pd.DataFrame, path: Path) -> None:
     """The recipe keeps its margin over the 3D ResNet at every training fraction (E4)."""
-    figure, axes = plt.subplots(1, 3, figsize=(FULL_WIDTH, 1.75), gridspec_kw={"wspace": 0.22})
+    figure, axes = plt.subplots(1, 3, figsize=(FULL_WIDTH, 1.5), gridspec_kw={"wspace": 0.22})
     for axis, task in zip(axes, TASK_TITLES, strict=True):
         pairs = (
             (selected_from_table(methods, task), ACCENT, "Recipe: frozen 2D encoder + LoRA"),
@@ -264,7 +264,7 @@ def data_efficiency_figure(methods: pd.DataFrame, path: Path) -> None:
 
 def attention_figure(hits: pd.DataFrame, profile: pd.DataFrame, path: Path) -> None:
     """Pooling weights trained with study labels alone fall on the slices that hold lesions (E5)."""
-    figure = plt.figure(figsize=(FULL_WIDTH, 2.0))
+    figure = plt.figure(figsize=(FULL_WIDTH, 1.75))
     grid = figure.add_gridspec(1, 2, width_ratios=[1.15, 1], wspace=0.18)
     example = grid[0].subgridspec(2, 1, hspace=0.12)
     lesion_axis = figure.add_subplot(example[0])

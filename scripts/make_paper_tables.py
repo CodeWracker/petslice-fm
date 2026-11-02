@@ -23,9 +23,9 @@ MAIN_ROWS = (
 INPUT_ROWS = (
     ("early", "Early fusion", "$S$"),
     ("late", "Late fusion", "$2S$"),
-    ("mip", "Rotated MIPs (PET only)", "16"),
-    ("pet_only", "PET only (control)", "$S$"),
-    ("ct_only", "CT only (control)", "$S$"),
+    ("mip", "Rotated MIPs, PET only", "16"),
+    ("pet_only", "PET only, control", "$S$"),
+    ("ct_only", "CT only, control", "$S$"),
 )
 BACKBONE_ROWS = (
     ("dinov3", "lora", "DINOv3 ViT-L"),
@@ -155,6 +155,54 @@ def backbone_table(methods: pd.DataFrame) -> str:
     return "\n".join(lines) + "\n"
 
 
+def results_table(methods: pd.DataFrame) -> str:
+    """E1, E2 and E3 in one table: inputs, encoders, 3D references and confound regressions."""
+    chosen = {task: selected(methods, task) for task in TASKS}
+
+    def group(title: str) -> str:
+        return f"\\multicolumn{{6}}{{@{{}}l}}{{\\emph{{{title}}}}} \\\\"
+
+    def row(label: str, method: dict[str, str], hour: str, bold=None) -> str:
+        cells = " & ".join(
+            cell(methods, task, method[task], bold=bold is not None and bold(task))
+            for task in TASKS
+        )
+        return f"{label} & {params(methods, method['diagnosis'])} & {hour} & {cells} \\\\"
+
+    lines = [
+        "\\begin{tabular}{@{}l r r l l l@{}}",
+        "\\toprule",
+        "Method & Trained & GPU\\,h & \\multicolumn{3}{c}{AUROC [95\\% interval]} \\\\",
+        "\\cmidrule(l){4-6}",
+        " & param. & diag. & Diagnosis & Lesion, FDG & Lesion, PSMA \\\\",
+        "\\midrule",
+        group("Recipe, DINOv3 ViT-L + LoRA, by input (E2); bold: input chosen on validation"),
+    ]
+    for mode, label, images in INPUT_ROWS:
+        method = {task: f"dinov3__{mode}__lora" for task in TASKS}
+        lines.append(
+            row(
+                f"{label} ({images} images)",
+                method,
+                hours(methods, "diagnosis", method["diagnosis"]),
+                bold=lambda task, mode=mode: chosen[task] == mode,
+            )
+        )
+    lines += ["\\midrule", group("Other encoders on the input chosen on validation (E3)")]
+    for encoder, adapter, label in BACKBONE_ROWS[1:]:
+        method = {task: f"{encoder}__{chosen[task]}__{adapter}" for task in TASKS}
+        lines.append(row(label, method, hours(methods, "diagnosis", method["diagnosis"])))
+    lines += ["\\midrule", group("3D references (E1)")]
+    for method, label in MAIN_ROWS[:5]:
+        hour = hours(methods, "diagnosis", method) if "tokens" not in method else "--"
+        lines.append(row(label, dict.fromkeys(TASKS, method), hour))
+    lines += ["\\midrule", group("Regressions without image structure (confound checks)")]
+    for method, label in MAIN_ROWS[5:]:
+        lines.append(row(label, dict.fromkeys(TASKS, method), "--"))
+    lines += ["\\bottomrule", "\\end{tabular}"]
+    return "\n".join(lines) + "\n"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, default=REPO_ROOT.parent / "cvpt-flatpet-latex/tables")
@@ -164,6 +212,7 @@ def main() -> None:
     (args.out / "main.tex").write_text(main_table(methods))
     (args.out / "inputs.tex").write_text(input_table(methods))
     (args.out / "backbones.tex").write_text(backbone_table(methods))
+    (args.out / "results.tex").write_text(results_table(methods))
 
 
 if __name__ == "__main__":

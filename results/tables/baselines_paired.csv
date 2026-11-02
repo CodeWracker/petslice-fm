@@ -1,0 +1,16 @@
+task,recipe,baseline,difference,low,high,p_value
+diagnosis,dinov3__late__lora,resnet3d__volume__none,0.0624,0.0466,0.0791,0.0000
+diagnosis,dinov3__late__lora,nnunet__tokens__frozen,0.2034,0.1797,0.2271,0.0000
+diagnosis,dinov3__late__lora,spectre__tokens__frozen,0.1087,0.0901,0.1277,0.0000
+diagnosis,dinov3__late__lora,petct_fm__tokens__frozen,0.2028,0.1801,0.2260,0.0000
+diagnosis,dinov3__late__lora,nnfoundation__tokens__frozen,0.0393,0.0253,0.0530,0.0000
+lesion_fdg,dinov3__mip__lora,resnet3d__volume__none,0.0564,0.0341,0.0785,0.0000
+lesion_fdg,dinov3__mip__lora,nnunet__tokens__frozen,0.3111,0.2742,0.3498,0.0000
+lesion_fdg,dinov3__mip__lora,spectre__tokens__frozen,0.1450,0.1112,0.1794,0.0000
+lesion_fdg,dinov3__mip__lora,petct_fm__tokens__frozen,0.3578,0.3175,0.3968,0.0000
+lesion_fdg,dinov3__mip__lora,nnfoundation__tokens__frozen,0.0376,0.0139,0.0624,0.0010
+lesion_psma,dinov3__mip__lora,resnet3d__volume__none,0.2141,0.0894,0.3375,0.0000
+lesion_psma,dinov3__mip__lora,nnunet__tokens__frozen,0.0994,-0.0760,0.2587,0.2450
+lesion_psma,dinov3__mip__lora,spectre__tokens__frozen,0.1499,0.0216,0.2719,0.0230
+lesion_psma,dinov3__mip__lora,petct_fm__tokens__frozen,0.1447,-0.0321,0.3066,0.1050
+lesion_psma,dinov3__mip__lora,nnfoundation__tokens__frozen,0.0675,-0.0246,0.1607,0.1420

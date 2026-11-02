@@ -22,13 +22,13 @@ MAIN_ROWS = (
 INPUT_ROWS = (
     ("early", "Early fusion", "$S$"),
     ("late", "Late fusion", "$2S$"),
-    ("mip", "Rotated MIPs", "16"),
+    ("mip", "Rotated MIPs (PET only)", "16"),
     ("pet_only", "PET only (control)", "$S$"),
     ("ct_only", "CT only (control)", "$S$"),
 )
 BACKBONE_ROWS = (
     ("dinov3", "lora", "DINOv3 ViT-L"),
-    ("dinov3", "none", "DINOv3 ViT-L, no LoRA"),
+    ("dinov3", "none", "DINOv3 ViT-L, no LoRA (pooling and head only)"),
     ("dinov2", "lora", "DINOv2 ViT-L"),
     ("rad_dino", "lora", "RAD-DINO ViT-B"),
     ("medsiglip", "lora", "MedSigLIP ViT-So400m"),
@@ -71,13 +71,15 @@ def hours(methods: pd.DataFrame, task: str, method: str) -> str:
 
 def main_table(methods: pd.DataFrame) -> str:
     chosen = {task: selected(methods, task) for task in TASKS}
-    names = {"early": "early", "late": "late", "mip": "MIPs"}
+    names = {"early": "early fusion", "late": "late fusion", "mip": "rotated MIPs"}
     lines = [
         "\\begin{tabular}{@{}l r r l l l@{}}",
         "\\toprule",
-        "Method & Trained & GPU\\,h & Diagnosis & Lesion, FDG & Lesion, PSMA \\\\",
+        "Method & Trained & GPU\\,h & \\multicolumn{3}{c}{AUROC [95\\% interval]} \\\\",
+        "\\cmidrule(l){4-6}",
+        " & param. & diag. & Diagnosis & Lesion, FDG & Lesion, PSMA \\\\",
         "\\midrule",
-        "Recipe: DINOv3 + LoRA, input chosen on validation & "
+        "Recipe: DINOv3 + LoRA & "
         + params(methods, f"dinov3__{chosen['diagnosis']}__lora")
         + " & "
         + hours(methods, "diagnosis", f"dinov3__{chosen['diagnosis']}__lora")
@@ -86,7 +88,9 @@ def main_table(methods: pd.DataFrame) -> str:
             cell(methods, task, f"dinov3__{chosen[task]}__lora", bold=True) for task in TASKS
         )
         + " \\\\",
-        "\\quad input & & & " + " & ".join(names[chosen[task]] for task in TASKS) + " \\\\",
+        "\\quad input chosen on validation & & & "
+        + " & ".join(names[chosen[task]] for task in TASKS)
+        + " \\\\",
         "\\midrule",
     ]
     for method, label in MAIN_ROWS:
@@ -107,10 +111,13 @@ def main_table(methods: pd.DataFrame) -> str:
 
 
 def input_table(methods: pd.DataFrame) -> str:
+    chosen = {task: selected(methods, task) for task in TASKS}
     lines = [
         "\\begin{tabular}{@{}l c r l l l@{}}",
         "\\toprule",
-        "Input $T$ & Images & GPU\\,h & Diagnosis & Lesion, FDG & Lesion, PSMA \\\\",
+        "Input $T$ & Images & GPU\\,h & \\multicolumn{3}{c}{AUROC [95\\% interval]} \\\\",
+        "\\cmidrule(l){4-6}",
+        " & per study & diag. & Diagnosis & Lesion, FDG & Lesion, PSMA \\\\",
         "\\midrule",
     ]
     for mode, label, images in INPUT_ROWS:
@@ -119,7 +126,7 @@ def input_table(methods: pd.DataFrame) -> str:
         method = f"dinov3__{mode}__lora"
         lines.append(
             f"{label} & {images} & {hours(methods, 'diagnosis', method)} & "
-            + " & ".join(cell(methods, task, method) for task in TASKS)
+            + " & ".join(cell(methods, task, method, bold=chosen[task] == mode) for task in TASKS)
             + " \\\\"
         )
     lines += ["\\bottomrule", "\\end{tabular}"]
@@ -131,7 +138,9 @@ def backbone_table(methods: pd.DataFrame) -> str:
     lines = [
         "\\begin{tabular}{@{}l r l l l@{}}",
         "\\toprule",
-        "Encoder & Trained & Diagnosis & Lesion, FDG & Lesion, PSMA \\\\",
+        "Encoder & Trained & \\multicolumn{3}{c}{AUROC [95\\% interval]} \\\\",
+        "\\cmidrule(l){3-5}",
+        " & param. & Diagnosis & Lesion, FDG & Lesion, PSMA \\\\",
         "\\midrule",
     ]
     for encoder, adapter, label in BACKBONE_ROWS:

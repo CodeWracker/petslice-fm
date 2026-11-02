@@ -229,7 +229,7 @@ def data_efficiency_figure(methods: pd.DataFrame, path: Path) -> None:
     figure, axes = plt.subplots(1, 3, figsize=(FULL_WIDTH, 1.75), gridspec_kw={"wspace": 0.22})
     for axis, task in zip(axes, TASK_TITLES, strict=True):
         pairs = (
-            (selected_from_table(methods, task), ACCENT, "Frozen 2D encoder + LoRA"),
+            (selected_from_table(methods, task), ACCENT, "Recipe: frozen 2D encoder + LoRA"),
             (RESNET, BLUE, "3D ResNet, from scratch"),
         )
         for method, color, label in pairs:
@@ -241,13 +241,23 @@ def data_efficiency_figure(methods: pd.DataFrame, path: Path) -> None:
         axis.set_xticklabels(["10", "25", "50", "100"])
         axis.minorticks_off()
         axis.set_xlim(8.5, 120)
-        axis.set_ylim(0.4, 1.0)
+        axis.set_ylim(0.3, 1.0)
         axis.axhline(0.5, color=MUTED, lw=0.5, ls=":")
-        axis.set_xlabel("Training patients (%)")
+        axis.text(118, 0.505, "chance", ha="right", va="bottom", color=MUTED, fontsize=6.5)
+        axis.set_xlabel("Training patients (%, log scale)")
         axis.set_title(TASK_TITLES[task])
         tidy(axis)
     axes[0].set_ylabel("AUROC")
-    axes[0].legend(frameon=False, loc="lower right", handlelength=1.6)
+    handles, labels = axes[0].get_legend_handles_labels()
+    figure.legend(
+        handles,
+        labels,
+        loc="lower center",
+        ncol=2,
+        frameon=False,
+        handlelength=1.6,
+        bbox_to_anchor=(0.5, -0.34),
+    )
     figure.savefig(path, bbox_inches="tight", pad_inches=0.01)
     plt.close(figure)
 
@@ -268,7 +278,9 @@ def attention_figure(hits: pd.DataFrame, profile: pd.DataFrame, path: Path) -> N
     weight_axis.set_ylabel("Weight $a_s$")
     weight_axis.set_xlabel("Slice height from the feet (mm)")
     lesion_axis.tick_params(labelbottom=False)
-    lesion_axis.set_title("One test study: lesions and pooling weights by slice")
+    lesion_axis.set_title(
+        "One FDG test study under the diagnosis model: lesions and weights by slice"
+    )
     lesion = study["lesion_ml"].to_numpy()
     runs = np.flatnonzero(np.diff(np.r_[0, (lesion > 0).astype(int), 0]))
     for start, stop in zip(runs[::2], runs[1::2], strict=True):
@@ -322,7 +334,7 @@ def attention_figure(hits: pd.DataFrame, profile: pd.DataFrame, path: Path) -> N
             rows["hit"],
             yerr=[rows["hit"] - rows["hit_low"], rows["hit_high"] - rows["hit"]],
             fmt="o",
-            color=ACCENT,
+            color=BLUE,
             ms=3.5,
             lw=0.7,
             capsize=0,

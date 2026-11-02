@@ -63,6 +63,8 @@ uv run scripts/pretrain_segmentation.py --tracer fdg --fold 0   # repeat for eac
 uv run scripts/train_token_heads.py
 uv run scripts/score_external.py                         # E6
 uv run scripts/aggregate.py                              # tables under results/
+uv run scripts/make_paper_tables.py                      # LaTeX table bodies from results/
+uv run scripts/make_paper_figures.py                     # result figures from results/ (--examples needs the cache)
 ```
 
 `run_grid.py` skips finished runs and each run resumes from its last epoch, so the grid can simply be
